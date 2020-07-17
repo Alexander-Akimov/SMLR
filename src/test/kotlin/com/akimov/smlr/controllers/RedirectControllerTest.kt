@@ -1,10 +1,15 @@
 package com.akimov.smlr.controllers
 
 import com.akimov.smlr.SmlrApplication
+import com.akimov.smlr.services.KeyMapperService
 import org.junit.Before
 import org.junit.Test
 import org.junit.experimental.results.ResultMatchers
 import org.junit.runner.RunWith
+import org.mockito.InjectMocks
+import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.MockitoAnnotations
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner
@@ -29,30 +34,40 @@ class RedirectControllerTest {
 
     lateinit var mockMvc: MockMvc
 
+    @Mock
+    lateinit var service: KeyMapperService
+
+    @Autowired
+    @InjectMocks
+    lateinit var controller: RedirectController
+
     @Before
     fun init() {
+        MockitoAnnotations.initMocks(this)
         mockMvc = MockMvcBuilders
                 .webAppContextSetup(webApplicationContext)
                 .build()
+
+        Mockito.`when`(service.getLink(PATH)).thenReturn(KeyMapperService.Get.Link(HEADER_VALUE))
+        Mockito.`when`(service.getLink(BAD_PATH)).thenReturn(KeyMapperService.Get.NotFound(BAD_PATH))
     }
 
     private val HEADER_NAME = "Location"
     private val REDIRECT_STATUS: Int = 302
     private val HEADER_VALUE = "http://www.mail.com"
-    private val PATH = "/aAdBcCdD"
+    private val PATH = "aAdBcCdD"
     @Test
     fun controllerMustRedirectUsWhenRequestIsSuccessful() {
-        mockMvc.perform(get(PATH))
-                .andExpect(status().`is`(REDIRECT_STATUS)) /// WTF `is` !!!!!
+        mockMvc.perform(get("/$PATH"))
+                .andExpect(status().`is`(REDIRECT_STATUS))
                 .andExpect(header().string(HEADER_NAME, HEADER_VALUE))
     }
 
     private val NOT_FOUND : Int = 404
     private val BAD_PATH = "/olololo"
-
     @Test
     fun controllerMustReturn404IfBadKey() {
-        mockMvc.perform(get(BAD_PATH))
+        mockMvc.perform(get("/$BAD_PATH"))
                 .andExpect(status().`is`(NOT_FOUND))
     }
 }
